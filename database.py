@@ -6,9 +6,9 @@ db_file = "ecommerce.db"
 data_dir = "data"
 
 csv_files = {
-    "product_eligibility_table": "C:/Users/Yohan Krishna/PycharmProjects/Anarix/Product-Level Eligibility Table.csv",
-    "product_ad_sales_metrics": "C:/Users/Yohan Krishna/PycharmProjects/Anarix/Product-Level Ad Sales and Metrics.csv",
-    "product_total_sales_metrics": "C:/Users/Yohan Krishna/PycharmProjects/Anarix/Product-Level Total Sales and Metrics.csv"
+    "product_eligibility_table": "Product-Level Eligibility Table.csv",
+    "product_ad_sales_metrics": "Product-Level Ad Sales and Metrics.csv",
+    "product_total_sales_metrics": "Product-Level Total Sales and Metrics.csv"
 }
 
 # DB Connection

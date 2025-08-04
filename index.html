@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>E-commerce AI Agent</title>
     <style>
-        /* General Styles & Dark Mode */
+        /* Dark Theme */
         :root {
             --bg-color: #f9fafb; --text-color: #1f2937; --card-bg-color: rgba(255, 255, 255, 0.8);
             --border-color: #e5e7eb; --input-bg-color: #ffffff; --input-border-color: #d1d5db;
@@ -62,7 +62,7 @@
             margin-top: 1rem;
         }
 
-        /* Error card remains for clear error display */
+        /* Error card */
         .error-card {
             background-color: var(--card-bg-color); border: 1px solid var(--border-color); border-radius: 1rem;
             box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05); display: none; margin-top: 1.5rem;
@@ -135,7 +135,7 @@
                 const question = input.value.trim();
                 if (!question) return;
 
-                // 1. Reset UI
+                // Reset UI
                 submitButton.disabled = true;
                 submitButton.innerHTML = ICONS.loading;
                 statusMessage.textContent = 'Thinking...';
@@ -148,7 +148,7 @@
                 summaryContent.textContent = '';
 
                 try {
-                    // 2. Fetch data from the backend stream
+                    // Fetching data from backend
                     const response = await fetch('http://localhost:8000/ask', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
@@ -162,7 +162,7 @@
                     const reader = response.body.getReader();
                     const decoder = new TextDecoder();
 
-                    // 3. Process the stream
+                    // Processing the stream
                     while (true) {
                         const { done, value } = await reader.read();
                         if (done) break;
@@ -200,7 +200,7 @@
                     errorCard.style.display = 'block';
                     errorContent.textContent = `Failed to connect to the backend. Please ensure it is running on http://localhost:8000 and that CORS is enabled.\n\nDetails: ${e.message}`;
                 } finally {
-                    // 4. Final UI state
+                    // Final UI
                     submitButton.disabled = false;
                     submitButton.innerHTML = ICONS.send;
                     if (statusMessage.textContent === 'Thinking...') {
