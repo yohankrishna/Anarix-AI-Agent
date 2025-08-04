@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-commerce AI Agent</title>
+    <style>
+        /* Dark Theme */
+        :root {
+            --bg-color: #f9fafb; --text-color: #1f2937; --card-bg-color: rgba(255, 255, 255, 0.8);
+            --border-color: #e5e7eb; --input-bg-color: #ffffff; --input-border-color: #d1d5db;
+            --subtle-text-color: #6b7280; --primary-color: #3b82f6; --primary-hover-color: #2563eb;
+            --disabled-color: #9ca3af; --error-icon-color: #ef4444;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #111827; --text-color: #f3f4f6; --card-bg-color: rgba(31, 41, 55, 0.8);
+                --border-color: #374151; --input-bg-color: #1f2937; --input-border-color: #4b5563;
+                --subtle-text-color: #9ca3af;
+            }
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 2rem; line-height: 1.5;
+        }
+        .container { max-width: 48rem; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 2rem; }
+        h1 { font-size: 2.5rem; font-weight: bold; margin: 0 0 0.5rem 0; }
+        form { position: relative; background-color: rgba(var(--bg-color), 0.8); backdrop-filter: blur(8px); padding: 0.5rem; border-radius: 1rem; position: sticky; top: 1rem; z-index: 10; }
+        textarea { width: 100%; padding: 1rem 5rem 1rem 1rem; border-radius: 0.75rem; border: 1px solid var(--input-border-color); background-color: var(--input-bg-color); color: var(--text-color); font-size: 1rem; resize: none; box-sizing: border-box; transition: border-color 0.2s; }
+        textarea:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 2px var(--primary-color); }
+        button { position: absolute; top: 50%; right: 0.75rem; transform: translateY(-50%); width: 3rem; height: 3rem; border-radius: 0.5rem; border: none; background-color: var(--primary-color); color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background-color 0.2s; }
+        button:hover { background-color: var(--primary-hover-color); }
+        button:disabled { background-color: var(--disabled-color); cursor: not-allowed; }
+        .icon { width: 1.5rem; height: 1.5rem; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .spinner { animation: spin 1s linear infinite; }
+        main { margin-top: 1.5rem; }
+        #status-message { text-align: center; color: var(--subtle-text-color); height: 1.5rem; }
+
+        /* Styles */
+        main h3 {
+            margin-top: 2.5rem;
+            color: var(--subtle-text-color);
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+        main pre {
+            background-color: var(--card-bg-color);
+            border: 1px solid var(--border-color);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            white-space: pre-wrap;
+            font-family: "Courier New", Courier, monospace;
+            overflow-x: auto;
+            margin-top: 1rem;
+        }
+        main p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-top: 1rem;
+        }
+
+        /* Error card */
+        .error-card {
+            background-color: var(--card-bg-color); border: 1px solid var(--border-color); border-radius: 1rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05); display: none; margin-top: 1.5rem;
+        }
+        .error-header { display: flex; align-items: center; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-color); font-weight: 600; color: var(--error-icon-color); }
+        .error-header .icon { margin-right: 0.5rem; }
+        .error-content { padding: 1rem; white-space: pre-wrap; font-family: "Courier New", Courier, monospace; }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>E-commerce AI Agent</h1>
+        </header>
+
+        <form id="question-form">
+            <textarea id="question-input" rows="2" placeholder="Ask Here"></textarea>
+            <button id="submit-button" type="submit"></button>
+        </form>
+
+        <main>
+            <div id="status-message"></div>
+
+            <div id="error-card" class="error-card">
+                <div id="error-header" class="error-header"><h3>Error</h3></div>
+                <div id="error-content" class="error-content"></div>
+            </div>
+
+            <h3 id="sql-heading" style="display: none;">Generated SQL Query</h3>
+            <pre id="sql-content" style="display: none;"></pre>
+
+            <h3 id="summary-heading" style="display: none;">Answer</h3>
+            <p id="summary-content" style="display: none;"></p>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM Elements
+            const form = document.getElementById('question-form');
+            const input = document.getElementById('question-input');
+            const submitButton = document.getElementById('submit-button');
+            const statusMessage = document.getElementById('status-message');
+            const errorCard = document.getElementById('error-card');
+            const errorHeader = document.getElementById('error-header');
+            const errorContent = document.getElementById('error-content');
+            const sqlHeading = document.getElementById('sql-heading');
+            const sqlContent = document.getElementById('sql-content');
+            const summaryHeading = document.getElementById('summary-heading');
+            const summaryContent = document.getElementById('summary-content');
+
+            // SVG Icons
+            const ICONS = {
+                send: '<svg class="icon" fill="currentColor" viewBox="0 0 24 24"><path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z"/></svg>',
+                loading: '<svg class="icon spinner" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+                error: '<svg class="icon" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" clip-rule="evenodd" /></svg>',
+            };
+
+            // Initial UI Setup
+            const setInitialState = () => {
+                submitButton.innerHTML = ICONS.send;
+                errorHeader.insertAdjacentHTML('afterbegin', ICONS.error);
+            };
+
+            // Form Submission Handler
+            const handleSubmit = async (event) => {
+                event.preventDefault();
+                const question = input.value.trim();
+                if (!question) return;
+
+                // Reset UI
+                submitButton.disabled = true;
+                submitButton.innerHTML = ICONS.loading;
+                statusMessage.textContent = 'Thinking...';
+                errorCard.style.display = 'none';
+                sqlHeading.style.display = 'none';
+                sqlContent.style.display = 'none';
+                summaryHeading.style.display = 'none';
+                summaryContent.style.display = 'none';
+                sqlContent.textContent = '';
+                summaryContent.textContent = '';
+
+                try {
+                    // Fetching data from backend
+                    const response = await fetch('http://localhost:8000/ask', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
+                        body: JSON.stringify({ question })
+                    });
+
+                    if (!response.ok || !response.body) {
+                        throw new Error(`Server error: ${response.status} ${response.statusText}`);
+                    }
+
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+
+                    // Processing the stream
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        const chunk = decoder.decode(value, { stream: true });
+                        const eventLines = chunk.split('\n\n').filter(line => line.trim());
+
+                        for (const line of eventLines) {
+                             if (line.startsWith('data:')) {
+                                const jsonData = line.substring(5).trim();
+                                try {
+                                    const parsed = JSON.parse(jsonData);
+                                    switch (parsed.event) {
+                                        case 'status':
+                                            statusMessage.textContent = parsed.data; break;
+                                        case 'sql':
+                                            sqlHeading.style.display = 'block';
+                                            sqlContent.style.display = 'block';
+                                            sqlContent.textContent += parsed.data; break;
+                                        case 'text':
+                                            summaryHeading.style.display = 'block';
+                                            summaryContent.style.display = 'block';
+                                            summaryContent.textContent = parsed.data; break;
+                                        case 'done':
+                                            statusMessage.textContent = ''; reader.cancel(); return;
+                                        case 'error':
+                                            throw new Error(parsed.data);
+                                    }
+                                } catch (e) { console.error('Failed to parse stream JSON:', e); }
+                            }
+                        }
+                    }
+                } catch (e) {
+                    statusMessage.textContent = 'An error occurred.';
+                    errorCard.style.display = 'block';
+                    errorContent.textContent = `Failed to connect to the backend. Please ensure it is running on http://localhost:8000 and that CORS is enabled.\n\nDetails: ${e.message}`;
+                } finally {
+                    // Final UI
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = ICONS.send;
+                    if (statusMessage.textContent === 'Thinking...') {
+                        statusMessage.textContent = '';
+                    }
+                }
+            };
+            setInitialState();
+            form.addEventListener('submit', handleSubmit);
+        });
+    </script>
+</body>
+</html>
